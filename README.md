@@ -64,4 +64,3 @@ The Wildfire Recovery application enables for furter analysis of user defined Pr
     - Info for the land cover of POI (for EU)
 - **Step 4:** Use the pan icon (UI No7) to exit drawing mode an navigate on the map
 
-**Note**: Cloud coverage can affect results, so ensure your AOI images are cloud-free.
