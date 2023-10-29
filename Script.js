@@ -4,6 +4,7 @@ var S2 = ee.ImageCollection("COPERNICUS/S2_SR"),
     geometry = /* color: #ffff00 */ee.Geometry.Point([23.886124193648172, 38.055712664222604]);
 
 
+
 //*********************************************INPUTS****************************************************************//
 
 
@@ -127,22 +128,11 @@ function drawRectangle() {
 }
 
 // Function to mask clouds
-function maskS2clouds(image) {
-  var qa = image.select('QA60');
-  var cloudBitMask = 1 << 10;
-  var cirrusBitMask = 1 << 11;
-  var mask = qa.bitwiseAnd(cloudBitMask).eq(0).and(
-             qa.bitwiseAnd(cirrusBitMask).eq(0));
-  return image.updateMask(mask).divide(10000)
-      .select("B.*")
-      .copyProperties(image, ["system:time_start"]);
+function s2ClearSky(image) {
+      var scl = image.select('SCL');
+      var clear_sky_pixels = scl.eq(4).or(scl.eq(5)).or(scl.eq(6)).or(scl.eq(11));
+      return image.updateMask(clear_sky_pixels);
 }
-
-var maskcloud1 = function(image) {
-  var QA60 = image.select(['QA60']);
-  var clouds = QA60.bitwiseAnd(1<<10).or(QA60.bitwiseAnd(1<<11));// this gives us cloudy pixels
-  return image.updateMask(clouds.not()); // remove the clouds from image
-};
 
 //Visualization
 var palettes = require('users/gena/packages:palettes');//Load color palettes
@@ -492,7 +482,6 @@ function model(){
   
   legendPanel.clear();
   resultsPanel.clear();
-  //inspector.clear();
   
   
   var PF_Date_Start_format = processUserInput(PF_Date_Start_Input.getValue());
@@ -622,7 +611,7 @@ function Timeseries(){
   var collection = S2.filterDate(Date_Start,Date_End)
   .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 20))
   .filter(ee.Filter.bounds(AOI))
-  .map(maskS2clouds)
+  .map(s2ClearSky)
   .map(addNDVI)
   .map(addNBR);
   
@@ -658,9 +647,9 @@ function Timeseries(){
   var extractAndComputeMean = function(image) {
     var matchingImages = ee.ImageCollection.fromImages(image.get('images'));
     var meanImage = matchingImages.reduce(
-      ee.Reducer.mean().setOutputs(['moving_average']))
-    return ee.Image(image).addBands(meanImage)
-  }
+      ee.Reducer.median().setOutputs(['moving_average']));
+    return ee.Image(image).addBands(meanImage);
+  };
 
   var smoothedCollection = ee.ImageCollection(
     joinedCollection.map(extractAndComputeMean));
@@ -703,8 +692,38 @@ function Timeseries(){
       
     });
     
+
+  resultsPanel.add(ui.Label({
+    value: "Click on timeseries to visualize the source S2 image",
+    style: { fontWeight: "bold" }
+  }));
+    
   resultsPanel.add(chartNDVI);
   resultsPanel.add(chartNBR);
+  
+  // When the chart is clicked, update the map and label.
+  chartNDVI.onClick(function(xValue, yValue, seriesName) {
+    if (!xValue) return;  // Selection was cleared.
+
+  // Show the image for the clicked date.
+    var equalDate = ee.Filter.equals('system:time_start', xValue);
+    var image = ee.Image(collection.filter(equalDate).first());
+    var lay = Map.layers().get(4);
+    if(lay){Map.remove(lay)}
+    Map.addLayer(image,Viz_AG,'Image from timeseries');
+  });
+  
+   chartNBR.onClick(function(xValue, yValue, seriesName) {
+    if (!xValue) return;  // Selection was cleared.
+
+  // Show the image for the clicked date.
+    var equalDate = ee.Filter.equals('system:time_start', xValue);
+    var image = ee.Image(collection.filter(equalDate).first());
+    var lay = Map.layers().get(4);
+    if(lay){Map.remove(lay)}
+    Map.addLayer(image,Viz_AG,'Image from timeseries');
+  });
+  
   
   //Add Land Cover info
   var landCover = CorineLC2018.reduceRegion({
@@ -730,31 +749,31 @@ function Timeseries(){
   
   
   
-  // Export the NBR time-series as a video
-  var nbrVis = {min:-0.7, max: 0.7,  palette: palette1};
+  // // Export the NBR time-series as a video
+  // var nbrVis = {min:-0.7, max: 0.7,  palette: palette1};
 
-  Map.centerObject(AOI, 16);
-  var bbox = Map.getBounds({asGeoJSON: true});
+  // Map.centerObject(AOI, 16);
+  // var bbox = Map.getBounds({asGeoJSON: true});
 
-  var visualizeImage = function(image) {
-    return image.visualize(nbrVis).clip(bbox).selfMask()
-  };
+  // var visualizeImage = function(image) {
+  //   return image.visualize(nbrVis).clip(bbox).selfMask();
+  // };
 
-  var visCollectionSmoothed = smoothedCollection.select('NBR_moving_average')
-  .map(visualizeImage);
+  // var visCollectionSmoothed = smoothedCollection.select('NBR_moving_average')
+  // .map(visualizeImage);
   
-  Export.video.toDrive({
-    collection: visCollectionSmoothed,
-    description: 'NBR_Time_Series',
-    folder: 'earthengine',
-    fileNamePrefix: 'NBR',
-    framesPerSecond: 2,
-    dimensions: 800,
-    region: bbox})
+  // Export.video.toDrive({
+  //   collection: visCollectionSmoothed,
+  //   description: 'NBR_Time_Series',
+  //   folder: 'earthengine',
+  //   fileNamePrefix: 'NBR',
+  //   framesPerSecond: 2,
+  //   dimensions: 800,
+  //   region: bbox});
     
-  print(smoothedCollection)
+  // print(smoothedCollection);
 
-}
+ }
 //*********************************************UI**********************************************************//
 
 
