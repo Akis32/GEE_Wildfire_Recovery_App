@@ -48,7 +48,7 @@ The workflow to run the visualization model:
    The model produces 4 layers on the map:
   - Classified DNBR Index tht classifies it in 4 categories Enhance Regrowth High, Enhance Regrowth High, Unburned, and Burn Scar.
   - Reference SWIR-NIR-Red Band combination that enables rapid visualization of burn scars and identification of cloud coverage.
-  - Curent SWIR-NIR-Red Band combination that enables burn scar comparisons and identification of cloud coverage.
+  - Curent  that enables burn scar comparisons and identification of cloud coverage.
   - Corine 2018 (For EU)
 
 
@@ -62,5 +62,6 @@ The Wildfire Recovery application enables for furter analysis of user defined Pr
     - DNBR timeseries chart for POI
     - NDVI timeseries chart for POI
     - Info for the land cover of POI (for EU)
-- **Step 4:** Use the pan icon (UI No7) to exit drawing mode an navigate on the map
+- **Step 4:** Click on timeseries to import the source Image on the map and explore SWIR-NIR-Red Band combination
+- **Step 5:** Use the pan icon to exit drawing mode an navigate on the map
 
