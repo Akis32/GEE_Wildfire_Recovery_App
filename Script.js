@@ -1,7 +1,7 @@
 var S2 = ee.ImageCollection("COPERNICUS/S2_SR"),
     LISB = ee.FeatureCollection("USDOS/LSIB_SIMPLE/2017"),
     Corine = ee.Image("COPERNICUS/CORINE/V20/100m/2018"),
-    geometry = /* color: #ffff00 */ee.Geometry.Point([23.886124193648172, 38.055712664222604]);
+    geometry = /* color: #ffff00 */ee.Geometry.MultiPoint();
 
 
 
@@ -130,7 +130,7 @@ function drawRectangle() {
 // Function to mask clouds
 function s2ClearSky(image) {
       var scl = image.select('SCL');
-      var clear_sky_pixels = scl.eq(4).or(scl.eq(5)).or(scl.eq(6)).or(scl.eq(11));
+      var clear_sky_pixels = scl.eq(1).or(scl.eq(2)).or(scl.eq(3)).or(scl.eq(4)).or(scl.eq(5)).or(scl.eq(6)).or(scl.eq(7)).or(scl.eq(10)).or(scl.eq(11));
       return image.updateMask(clear_sky_pixels);
 }
 
@@ -138,10 +138,12 @@ function s2ClearSky(image) {
 var palettes = require('users/gena/packages:palettes');//Load color palettes
 var palette1 = palettes.crameri.roma[25];//Define a specific palette option
 
-var Viz_AG = {min:0,max:6000,bands:['B12','B8','B4']};
+var Viz_AG = {min:0,max:6000,bands:['B12','B8','B4']}; 
+var Viz_AG_smooth = {min:0,max:6000,bands:['B12_moving_average','B8_moving_average','B4_moving_average']};
 var Viz_RGB = {min:0, max:4000,bands:['B4', 'B3', 'B2']};
 var Viz_CI = {min:0, max:7000,bands:['B8', 'B4', 'B3']};
 var Viz_class = {min:1, max:4,palette:'#6DC26D, #4B924B, #4C6DFF, #FF4C4C'};
+
 
 var countryList = [
   "Afghanistan",
@@ -692,7 +694,8 @@ function Timeseries(){
       
     });
     
-
+  print(smoothedCollection)
+  
   resultsPanel.add(ui.Label({
     value: "Click on timeseries to visualize the source S2 image",
     style: { fontWeight: "bold" }
@@ -707,10 +710,10 @@ function Timeseries(){
 
   // Show the image for the clicked date.
     var equalDate = ee.Filter.equals('system:time_start', xValue);
-    var image = ee.Image(collection.filter(equalDate).first());
+    var image = ee.Image(smoothedCollection.filter(equalDate).first());
     var lay = Map.layers().get(4);
     if(lay){Map.remove(lay)}
-    Map.addLayer(image,Viz_AG,'Image from timeseries');
+    Map.addLayer(image,Viz_AG_smooth,'Image from timeseries');
   });
   
    chartNBR.onClick(function(xValue, yValue, seriesName) {
@@ -718,10 +721,10 @@ function Timeseries(){
 
   // Show the image for the clicked date.
     var equalDate = ee.Filter.equals('system:time_start', xValue);
-    var image = ee.Image(collection.filter(equalDate).first());
+    var image = ee.Image(smoothedCollection.filter(equalDate).first());
     var lay = Map.layers().get(4);
     if(lay){Map.remove(lay)}
-    Map.addLayer(image,Viz_AG,'Image from timeseries');
+    Map.addLayer(image,Viz_AG_smooth,'Image from timeseries');
   });
   
   
@@ -913,4 +916,3 @@ var TimeseriesButton = ui.Button({
 });
 
 panel.add(TimeseriesButton);
-
