@@ -1,6 +1,6 @@
 # Wildfire Recovery Application - [Link](https://ee-my-username32blue.projects.earthengine.app/view/wildfire-recover)
 
-This repository contains the web-based application "Wildfire Impact" for analyzing the impact of fires using Google Earth Engine and Google Earth Engine's user interface (UI). Harnessing the power of Google Earth Engine, the "Wildfire Impact" application is designed to visualize, identify, and calculate the recovery from wildfires worldwide from Sentinel-2 images, in a matter of seconds.
+This repository contains the web-based application "Wildfire Impact" for analyzing the recovery of wildfire affected areas using Google Earth Engine and Google Earth Engine's user interface (UI). Harnessing the power of Google Earth Engine, the "Wildfire Impact" application is designed to visualize, identify, and calculate the recovery from wildfires worldwide from Sentinel-2 images, in a matter of seconds.
 
 **Click the image below for the model workflow demo**
 [![WildfireImpactDemo](https://img.youtube.com/vi/hG2sv7bSYec/maxresdefault.jpg)](https://www.youtube.com/watch?v=e6U0JWRmj84&ab_channel=akisch)
