@@ -6,39 +6,24 @@ var S2 = ee.ImageCollection("COPERNICUS/S2_SR"),
 
 
 //*********************************************INPUTS****************************************************************//
-
-
-//After fire end date range
-var PF_Date_Start_Input = ui.Textbox({
-  placeholder: "Enter date (yyyy-mm-dd)",
-  style: { width: '200px' }
-});
-
-// After fire end date range
-var PF_Date_End_Input = ui.Textbox({
-  placeholder: "Enter date (yyyy-mm-dd)",
+//Reference image collection start
+var RF_Date_Start_Input = ui.Textbox({
+  placeholder: "Enter start date (yyyy-mm-dd)",
   style: { width: '200px' }
 });
 
 
-//Pre fire end date range
-var CS_Date_Start_Input = ui.Textbox({
-  placeholder: "Enter date (yyyy-mm-dd)",
-  style: { width: '200px' }
-});
-
-//After fire end date range
+//Current image collection start
 var CS_Date_End_Input = ui.Textbox({
-  placeholder: "Enter date (yyyy-mm-dd)",
+  placeholder: "Enter end date (yyyy-mm-dd)",
   style: { width: '200px' }
 });
+
 
 //*********************************************GENERAL FUNCTIONS AND VARIABLES****************************************************************//
 
 //******************************************************Input processing
-PF_Date_Start_Input.onChange(updateSelectedDates);
-PF_Date_End_Input.onChange(updateSelectedDates);
-CS_Date_Start_Input.onChange(updateSelectedDates);
+RF_Date_Start_Input.onChange(updateSelectedDates);
 CS_Date_End_Input.onChange(updateSelectedDates);
 
 // Function to validate and process user input
@@ -53,8 +38,8 @@ function processUserInput(input) {
 
 // Function to update selected dates
 function updateSelectedDates() {
-  var startInput = PF_Date_Start_Input.getValue();
-  var endInput = PF_Date_End_Input.getValue();
+  var startInput = RF_Date_Start_Input.getValue();
+  var endInput = CS_Date_End_Input.getValue();
   
   var formattedStart = processUserInput(startInput);
   var formattedEnd = processUserInput(endInput);
@@ -134,15 +119,24 @@ function s2ClearSky(image) {
       return image.updateMask(clear_sky_pixels);
 }
 
-//Visualization
-var palettes = require('users/gena/packages:palettes');//Load color palettes
-var palette1 = palettes.crameri.roma[25];//Define a specific palette option
+//Creates a color bar thumbnail image for use in legend from the given color palette.
+function makeColorBarParams(palette) {
+  return {
+    bbox: [0, 0, 1, 0.1],
+    dimensions: '100x10',
+    format: 'png',
+    min: 0,
+    max: 1,
+    palette: palette,
+  };
+}
 
+//Visualization
 var Viz_AG = {min:0,max:6000,bands:['B12','B8','B4']}; 
 var Viz_AG_smooth = {min:0,max:6000,bands:['B12_moving_average','B8_moving_average','B4_moving_average']};
 var Viz_RGB = {min:0, max:4000,bands:['B4', 'B3', 'B2']};
 var Viz_CI = {min:0, max:7000,bands:['B8', 'B4', 'B3']};
-var Viz_class = {min:1, max:4,palette:'#6DC26D, #4B924B, #4C6DFF, #FF4C4C'};
+var Viz_DNBR = {min:-1, max:1,palette:'#16537e, #45818e, #d7b98a, #f44336, #990000'};
 
 
 var countryList = [
@@ -486,10 +480,12 @@ function model(){
   resultsPanel.clear();
   
   
-  var PF_Date_Start_format = processUserInput(PF_Date_Start_Input.getValue());
-  var PF_Date_End_format = processUserInput(PF_Date_End_Input.getValue());
-  var CS_Date_Start_format = processUserInput(CS_Date_Start_Input.getValue());
+
+  var RF_Date_Start_format = processUserInput(RF_Date_Start_Input.getValue());
   var CS_Date_End_format = processUserInput(CS_Date_End_Input.getValue());
+  
+  var RF_Date_End_format = ee.Date(RF_Date_Start_format).advance(1,'month');
+  var CS_Date_Start_format = ee.Date(CS_Date_End_format).advance(-1,'month');
   
   //Clip land Cover
   var CorineLC2018_Clip = CorineLC2018.clip(Country_select);
@@ -498,34 +494,19 @@ function model(){
   var collection_CS = S2.filterDate(CS_Date_Start_format, CS_Date_End_format)
       .sort('CLOUDY_PIXEL_PERCENTAGE', false)
       .filterBounds(Country_select);
+      
   var CS_Img = ee.Image(collection_CS.mosaic()).clip(Country_select);
 
   var NBR_CS = CS_Img.normalizedDifference(['B8','B12']);
 
   //Posfire NBR
-  var collection_PF = S2.filterDate(PF_Date_Start_format,PF_Date_End_format).sort('CLOUDY_PIXEL_PERCENTAGE', false).filterBounds(Country_select);
+  var collection_PF = S2.filterDate(RF_Date_Start_format,RF_Date_End_format).sort('CLOUDY_PIXEL_PERCENTAGE', false).filterBounds(Country_select);
   var PF_Img = ee.Image(collection_PF.mosaic()).clip(Country_select);
 
   var NBR_PF = PF_Img.normalizedDifference(['B8','B12']);
 
   //DNBR Calculation
   var DNBR = NBR_PF.subtract(NBR_CS);
-
-  //Classification of DNBR
-  var class_DNBR = DNBR
-  .where(DNBR.gt(-2).and(DNBR.lte(-0.25)),1)     //Enhance Regrowth High - Blue
-  .where(DNBR.gt(-0.25).and(DNBR.lte(-0.1)),2)   //Enhance Regrowth Low - yellow
-  .where(DNBR.gt(-0.1).and(DNBR.lte(0.270)),3)       //Unburned - Orange
-  .where(DNBR.gt(0.270).and(DNBR.lte(2)),4)          //Burn Scar - Purple 
-  .remap([1,2,3,4],[1,2,3,4]);  
-
-  //Apply focal filter
-  var Kernel = ee.Kernel.square({radius:5,units:"pixels"});
-
-  var filter_DNBR = class_DNBR.reduceNeighborhood({
-    reducer: ee.Reducer.mode(),
-    kernel: Kernel
-  });
 
   //Zoom Country
   Map.centerObject(Country_select);
@@ -537,22 +518,13 @@ function model(){
   removelay();
   removelay();
 
-  Map.addLayer(filter_DNBR,Viz_class,'DNBR');
+  Map.addLayer(DNBR,Viz_DNBR,'DNBR',false);
   Map.addLayer(PF_Img,Viz_AG,'(SWIR-NIR-Red) Reference period');
   Map.addLayer(CS_Img,Viz_AG,'(SWIR-NIR-Red) Current state');
-  Map.addLayer(CorineLC2018_Clip, {}, 'Land Cover');
+  Map.addLayer(CorineLC2018_Clip, {}, 'Land Cover',false);
 
-  //Add legend on the map
-  // set position of panel
-  var legend = ui.Panel({
-    style: {
-      position: 'bottom-left',
-      padding: '8px 15px'
-    }
-  });
- 
   // Create legend title
-  var legendTitle = ui.Label({
+  var legendTitle_DNBR= ui.Label({
     value: 'Fire impact (DNBR index)',
     style: {
       fontWeight: 'bold',
@@ -561,43 +533,26 @@ function model(){
       padding: '0'
       }
   });
- 
-  // Add the title to the panel
-  legend.add(legendTitle);
- 
-  // Creates and styles 1 row of the legend.
-  var makeRow = function(color, name) {
-        var colorBox = ui.Label({
-          style: {
-            backgroundColor: color,
-            padding: '8px',
-            margin: '0 0 4px 0'
-          }
-        });
-        var description = ui.Label({
-          value: name,
-          style: {margin: '0 0 4px 6px'}
-        });
-        return ui.Panel({
-          widgets: [colorBox, description],
-          layout: ui.Panel.Layout.Flow('horizontal')
-        });
-  };
- 
-  //  Palette with the colors
-  var palette =['#6DC26D', '#4B924B', '#4C6DFF', '#FF4C4C'];
- 
-  // name of the legend
-  var names = ['Enhance Regrowth High','Enhance Regrowth Low','Unburned', 'Burn Scar'];
- 
-  // Add color and and names
-  for (var i = 0; i < 4; i++) {
-    legend.add(makeRow(palette[i], names[i]));
-    }  
- 
 
-  legendPanel.add(legend);
+// Create the DNBR color bar for the legend.
+  var legendLabels_DNBR = ui.Panel({
+    widgets: [
+    ui.Label('Regrowth', {margin: '4px 8px'}),
+    ui.Label('Burn scar', {margin: '4px 8px',textAlign: 'right', stretch: 'horizontal'})
+    ],
+    layout: ui.Panel.Layout.flow('horizontal')
+  });
   
+    
+  var colorBar_DNBR = ui.Thumbnail({
+    image: ee.Image.pixelLonLat().select(0),
+    params: makeColorBarParams(Viz_DNBR.palette),
+    style: {stretch: 'horizontal', margin: '0px 8px', maxHeight: '24px'},
+  });
+
+  var legendPanel_DNBR = ui.Panel([legendTitle_DNBR, colorBar_DNBR, legendLabels_DNBR]);
+  
+  legendPanel.widgets().set(3, legendPanel_DNBR);
   
 }
 
@@ -607,7 +562,7 @@ function Timeseries(){
   
   var AOI = drawingTools.layers().get(0).getEeObject();
   
-  var Date_Start = processUserInput(PF_Date_Start_Input.getValue());
+  var Date_Start = processUserInput(RF_Date_Start_Input.getValue());
   var Date_End = processUserInput(CS_Date_End_Input.getValue());
   
   var collection = S2.filterDate(Date_Start,Date_End)
@@ -782,12 +737,17 @@ function Timeseries(){
 
 //*************************PANELS
 // Add main panel
-var panel = ui.Panel();
-panel.style().set({
-  width: "300px"
+var panel = ui.Panel({
+  style: {
+    backgroundColor: 'white',
+    border: '1px solid black',
+    padding: '10px',
+    width: '300px',
+    position:'middle-left'
+  }
 });
 
-ui.root.add(panel);
+Map.add(panel);
 
 
 //Create a legend panel
@@ -796,7 +756,7 @@ var legendPanel = ui.Panel({
     backgroundColor: 'white',
     border: '1px solid black',
     padding: '10px',
-    width: '250px',
+    width: '300px',
     position:'bottom-left'
   }
 });
@@ -854,38 +814,13 @@ Map.add(controlPanel);
 
 //Date inputs
 panel.add(ui.Label({
-  value: "Select reference image collection start and end period",
+  value: "Select start and end date",
   style: { fontWeight: "bold" }
 }));
 
-panel.add(ui.Label({
-  value: "Start date:"
-}));
 
-panel.add(PF_Date_Start_Input);
+panel.add(RF_Date_Start_Input);
 
-
-panel.add(ui.Label({
-  value: "End date:"
-}));
-
-panel.add(PF_Date_End_Input);
-
-panel.add(ui.Label({
-  value: "Select current image collection start and end period",
-  style: { fontWeight: "bold" }
-}));
-
-panel.add(ui.Label({
-  value: "Start date:"
-}));
-
-panel.add(CS_Date_Start_Input);
-
-
-panel.add(ui.Label({
-  value: "End date:"
-}));
 
 panel.add(CS_Date_End_Input);
 
