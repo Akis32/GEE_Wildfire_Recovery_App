@@ -18,6 +18,8 @@ Explore the recovery after wildfires using the "Wildfire Recovery" application t
 
 - **Timeseries charts**: The application creates interactive timeseries charts for NBRI and NDVI to estimete the POI recovery from wildfire.
 
+- **Download charts as CSV**: The applications enables the indices timeseries export as CSV files
+
 ## How It Works
 
 The tool operates in two steps:
@@ -63,4 +65,5 @@ The Wildfire Recovery application enables for furter analysis of user defined Pr
     - Info for the land cover of POI (for EU)
  - > Click on timeseries to import the source Image on the map and explore SWIR-NIR-Red Band combination
  - > Use the pan icon (small hand icon on the top left) to exit drawing mode an navigate on the map
+- **Step 8:** Download the charts from the top right links that pop-up
 
