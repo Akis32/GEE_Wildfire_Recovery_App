@@ -559,8 +559,17 @@ function model(){
 function Timeseries(){
   
   resultsPanel.clear();
+  ExportPanel.clear();
+  coordinatepanel.clear();
+  
+  ExportPanel.add(ui.Label({
+    value: "Export CSV Files list",
+    style: { fontWeight: "bold" }
+  }));
+
   
   var AOI = drawingTools.layers().get(0).getEeObject();
+  print (AOI)
   
   var Date_Start = processUserInput(RF_Date_Start_Input.getValue());
   var Date_End = processUserInput(CS_Date_End_Input.getValue());
@@ -648,8 +657,6 @@ function Timeseries(){
       }
       
     });
-    
-  print(smoothedCollection)
   
   resultsPanel.add(ui.Label({
     value: "Click on timeseries to visualize the source S2 image",
@@ -705,8 +712,79 @@ function Timeseries(){
     resultsPanel.add(LandCoverText);
   });
   
+  //--------------------------------------------Eport to CSV------------------------------------//
+
+  //NDVI conversion to get the values function
+  var NDVIfeature_series = function(img){
+    var date = img.get('system:time_start');
+    var value = img.reduceRegion({
+      reducer: ee.Reducer.mean(),
+      geometry: AOI,
+      scale: 10}
+      ).get('NDVI_moving_average');
+    var feature = ee.Feature(null, {'system:time_start': date, 
+                            'date': ee.Date(date).format('Y/M/d'), 
+                            'value': value});
+    return feature;
+  };
   
+  // Apply the timeseries mapping function to each image in smoothered colection
+  var NDVI_ts = smoothedCollection.map(NDVIfeature_series);
   
+  var downloadNDVIUrl = ee.FeatureCollection(NDVI_ts).getDownloadURL({
+    format: 'CSV',
+    filename: 'NDVI timeseries',
+    selectors: ['date', 'value']
+    });
+  
+  var labelNDVI= ui.Label('NDVI timeseries CSV download');
+  labelNDVI.setUrl(downloadNDVIUrl);
+  labelNDVI.style().set({shown: true});
+  
+  ExportPanel.add(labelNDVI);
+
+  
+  //NBR conversion to get the values function
+  var NBRfeature_series = function(img){
+    var date = img.get('system:time_start');
+    var value = img.reduceRegion({
+      reducer: ee.Reducer.mean(),
+      geometry: AOI,
+      scale: 10}
+      ).get('NBR_moving_average');
+    var feature = ee.Feature(null, {'system:time_start': date, 
+                            'date': ee.Date(date).format('Y/M/d'), 
+                            'value': value});
+    return feature;
+  };
+  
+  // Apply the timeseries mapping function to each image in smoothered colection
+  var NBR_ts = ee.FeatureCollection(smoothedCollection.select('NBR_moving_average').map(NBRfeature_series));
+  
+
+  var downloadNBRUrl = NBR_ts.getDownloadURL({
+    format: 'CSV',
+    filename: 'NBR timeseries',
+    selectors: ['date', 'value']
+    });
+  
+  var labelNBR= ui.Label('NBR timeseries CSV download');
+  labelNBR.setUrl(downloadNBRUrl);
+  labelNBR.style().set({shown: true});
+  
+  ExportPanel.add(labelNBR);
+  
+  //Show coordinates
+  var coortext =  ui.Label({
+    value: 'Point Coordinates',
+    style: { fontWeight: 'bold' }
+  });
+  
+  var lon =  ui.Label().setValue('long: '+ee.String(AOI.coordinates().get(0)).slice(0,8).getInfo());
+  var lat =  ui.Label().setValue('lat: '+ee.String(AOI.coordinates().get(1)).slice(0,8).getInfo());
+  
+  coordinatepanel.add(coortext);
+  coordinatepanel.add(ui.Panel([lon, lat], ui.Panel.Layout.flow('horizontal')));
   // // Export the NBR time-series as a video
   // var nbrVis = {min:-0.7, max: 0.7,  palette: palette1};
 
@@ -764,7 +842,18 @@ var legendPanel = ui.Panel({
 Map.add(legendPanel);
 
 
+//Export panel
+var ExportPanel = ui.Panel({
+  style: {
+    backgroundColor: 'white',
+    border: '1px solid black',
+    padding: '10px',
+    width: '300px',
+    position:'top-right'
+  }
+});
 
+Map.add(ExportPanel);
 
 //Country selection dropdown list
 var countrySelect = ui.Select({
@@ -773,7 +862,6 @@ var countrySelect = ui.Select({
   onChange: updateSelectedCountry,
   style: {
     height:'50px',
-    width:'200px',
     fontWeight:'50px'
   }
   
@@ -793,6 +881,17 @@ var resultsPanel = ui.Panel({
 });
 
 Map.add(resultsPanel);
+
+//Create a results panel
+var coordinatepanel = ui.Panel({
+  style: {
+    backgroundColor: 'white',
+    position:'top-center'
+  }
+});
+
+Map.add(coordinatepanel);
+
 
 //Define a ui.Panel to hold 
 //app instructions and the geometry drawing buttons.
