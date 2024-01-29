@@ -26,7 +26,7 @@ The tool operates in two steps:
 
 1. **Data Collection and Visualize Impact**: Select the country of interest and specify the curen and reference image collection periods. The tool uses this data to calculate the NBR and NDV index, identifying areas recovering from wildfires.
 
-2. **POI Analysis**: Define an AOI, and the tool provides NBR and NDVI timeseries statistics identifing the user for the land cover of the POI from Corine 2018 (For EU).
+2. **POI Analysis**: Define an POI, and the tool provides NBR and NDVI timeseries statistics identifing the user for the land cover of the POI from Corine 2018 (For EU).
 
 Whether you're a researcher, land manager, or concerned citizen, the Wildfire Recovery Analysis Tool offers a powerful and accessible way to assess the recovery from wildfires and make informed decisions based on satellite data.
 
@@ -57,13 +57,13 @@ The workflow to run the visualization model:
 
 The Wildfire Recovery application enables for furter analysis of user defined Proint Of Interst (POI). To asses the wildfire recovery for specific regions:
 
-- **Step 5:** Define the POI from the custom Drawing Tools. Click on "Point" button and draw on the map to specify the POI. Click a second time on the "Point" button to reset the point geometry an define a defferent POI.
+- **Step 5:** Define the POI from the custom Drawing Tools. Click on "Point" button and draw on the map to specify the POI. Click a second time on the "Point" button to reset the point geometry an define a defferent POI. Coordinates of POI will appear on screen after the next step.
 - **Step 6:** Click on the "Create timeseries" button
 - **Step 7:** The timeseries results will pop up
     - DNBR timeseries chart for POI
     - NDVI timeseries chart for POI
     - Info for the land cover of POI (for EU)
  - > Click on timeseries to import the source Image on the map and explore SWIR-NIR-Red Band combination
- - > Use the pan icon (small hand icon on the top left) to exit drawing mode an navigate on the map
-- **Step 8:** Download the charts from the top right links that pop-up
+ - > Use the pan icon (small hand icon on the top left) to exit drawing mode and navigate on the map
+ - > Expand the chart from top right icon (on the chart) and use the download CSV option to export the chart CSV file.
 
