@@ -2,6 +2,9 @@
 
 This repository contains the web-based application "Wildfire Impact" for analyzing the recovery of wildfire affected areas using Google Earth Engine and Google Earth Engine's user interface (UI). Harnessing the power of Google Earth Engine, the "Wildfire Impact" application is designed to visualize, identify, and calculate the recovery from wildfires worldwide from Sentinel-2 images, in a matter of seconds.
 
+### Click on the following image to view a brief demo of the application
+[![WildfireRecoveryDemo](https://img.youtube.com/vi/5TienuqeM3Y/0.jpg)](https://www.youtube.com/watch?v=5TienuqeM3Y)
+
 ### Development team: 
 [Minas Chatzigeorgiadis](https://www.linkedin.com/in/minas-chatz/), [Dr Thanos Doganis](https://www.linkedin.com/in/thanos-doganis-41550915/) and [Io Dogani](https://www.linkedin.com/in/dogani-io/), GIS Lab research team of [MSc Climate ICT](https://masters.ds.unipi.gr/MSc_Climate_ICT/en/) of [University of Piraeus](https://www.unipi.gr/unipi/en/)
 _______________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________
